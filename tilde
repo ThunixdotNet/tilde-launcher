@@ -53,8 +53,13 @@ class TildeLauncher:
 			for c in self.tc.list(argv[1:]):
 				print "  tilde contrib "+c
 		elif argv[0]=="bootstrap":
-			for c in self.tc.list([],False):
-				print("alias {0}=\"tilde contrib {0}\"".format(c))
+			print("""
+				you might have to adjust this if you're not using bash
+				(you just need to add /tilde/bin to your PATH)
+
+				run this:
+				echo 'export PATH=$PATH:/tilde/bin' >> ~/.bashrc
+			""")
 		else:
 			getattr(self.tc,argv[0])(argv[1:])
 
