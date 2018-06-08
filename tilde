@@ -26,7 +26,7 @@ class TildeLauncher:
 
 	COMMANDS = ["help","contrib","chat"]
 
-	USAGE = dict(help="\n  Displays this menu",contrib=" <program>\n  Your gateway to programs made by teammates,\n  for teammates!",chat="\n  An IRC chatroom.")
+	USAGE = dict(help="\n  Displays this menu",contrib=" <program>\n  Your gateway to programs made by teammates,\n  for teammates!")
 
 	def __init__(self,prog_dir):
 		self.progdir = prog_dir
