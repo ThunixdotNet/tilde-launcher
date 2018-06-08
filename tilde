@@ -58,8 +58,8 @@ class TildeLauncher:
 		else:
 			getattr(self.tc,argv[0])(argv[1:])
 
-	def chat(self,argv):
-		os.system("/tilde/special/chat")
+#	def chat(self,argv):
+#		os.system("/tilde/special/chat")
 
 if __name__=="__main__":
 	tl = TildeLauncher("/tilde/bin")
