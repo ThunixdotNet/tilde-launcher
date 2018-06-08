@@ -1,88 +1,43 @@
-# tilde-launcher
+# `tilde` - A tilde-launcher proposal in Python
 
-## background
+This is my proposal for the tilde town program launcher. Here are the features that make it compliant with the specs:
 
-As [tilde.town](https://tilde.town) has grown over the years, many users have
-produced interesting, useful, and/or fun tools for the community to use. It
-goes like this:
+ - It has a help menu that, while not meeting the format of the specs, gives an example usage string and description.
+ - It implements the contrib system beautifully (IMO)
 
-- person writes a tool
-- person tells people in IRC about it
-- people link it from their ~/bin or just call the person's script directly
-- someone asks for the tool to be globally linked
-- eventually ~vilmibm runs `ln -s ~/coolperson/bin/thing /usr/bin/`
+Here are the things I have left to make before this proposal can be considered a true answer to the specs:
 
-This works, but new users often ask "what tilde-specific commands can i run?"
-this is a good and reasonable question and it's hard to answer.
+ - [ ] Implement submit process
+ - [ ] Implement other commands shown in help example (see below)
+ - [ ] Polish some rough logic
 
-## purpose
+## Top-level commands
 
-`tilde-launcher` serves as a welcome mat to all things tilde.town and
-executable.
+ - [X] help - complete
+ - [X] contrib - complete
+ - [X] chat - complete
+ - [ ] mail - just need to write this one
+ - [ ] page - see Questions section below
+ - [ ] poetry - just need to write this one to work with prosaic (I assume)
+ - [ ] submit - probably can use the same mechanic as page (unless a volunteer admin could be tasked with this, in which case, this would submit to the volunteer portal
+ - [ ] toot and tweet - just need to write these
+ - [ ] wiki - not gonna lie, just going to wrap the wiki tool as it exists on this one; you want thin, you got it
 
-## usage
+## Questions
 
-an interaction with `tilde-launcher` should look something like this:
+### `tilde page`
 
-```
-$ tilde
-    Welcome to tilde.town :) this program is your gateway to town-specific
-    commands and features. Run tilde help to see the sort of things you can
-    do.
-$ tilde help
-   You can use the following commands with the tilde program:
-   
-   chat     join the local IRC server
-   contrib  run a community command like 'feels'
-   help     display this help
-   mail     check your tilde.town email
-   page     alert ~vilmibm to an emergency
-   poetry   generate poetry from cut-up text
-   submit   suggest that a program be added to contrib
-   toot     post a message to the community mastodon
-   tweet    post a message to the community twitter
-   wiki     access or update the town wiki
+ - How should this be accomplished?
+ - Is this supposed to be only for vilmibm or for an admin in general to help?
+ - If the answer to the previous question is the latter, how should this be accomplished?
 
-   You can also run:
+### `tilde submit`
 
-   tilde help command
+Same as above.
 
-   and replace "command" with one of the above commands to get help specific
-   to that command.
-$ tilde contrib
-    This command helps you run various community-maintained programs. If you
-    want to see them all, use --list
-$ tilde contrib --list
-    botany
-    feels
-    writo
-    # truncated for example's sake
-$ tilde contrib --bootstrap
-    alias botany='tilde contrib botany'
-    alias feels='tilde contrib feels'
-    alias writo='tilde contrib writo'
-    # truncated for example's sake
-    # For backwards compatability when included in ~/.bashrc as `source $(tilde contrib --bootstrap)`
-$ tilde contrib botany
-    # ...runs botany
-$ vim cool_program
-$ tilde submit cool_program
-   You've submitted cool_program to ~vilmibm for review! check your tildemail
-   in a few days for an update.
-```
+## Requirements
 
-## project goals
+In `/tilde/special`, put:
 
-- As thin as possible. No actual logic should be run here.
-- Easy to add to. Commands should be made available with symlinking.
-- Beginner friendly. Shouldn't use any words that go undefined or aren't
-  self-evident for a newcomer to Unix/Linux.
-
-## Open questions
-
-0. Should this be implemented in a shell script? Or something higher level?
-1. Does this obsolete
-   [tildetown-scripts](https://github.com/tildetown/tildetown-scripts) should
-   it?
-2. Should this eventually expose the admin functions afforded by
-   [tildetown-admin](https://github.com/tildetown/tildetown-admin)?
+ - `chat` - launches IRC (however you want to do it)
+ - `list` - see list program in this directory
