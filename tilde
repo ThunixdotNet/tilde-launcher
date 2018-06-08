@@ -26,14 +26,14 @@ class TildeLauncher:
 
 	COMMANDS = ["help","contrib","chat"]
 
-	USAGE = dict(help="\n  Displays this menu",contrib=" <program>\n  Your gateway to programs made by townies,\n  for townies!",chat="\n  An IRC chatroom.")
+	USAGE = dict(help="\n  Displays this menu",contrib=" <program>\n  Your gateway to programs made by teammates,\n  for teammates!",chat="\n  An IRC chatroom.")
 
 	def __init__(self,prog_dir):
 		self.progdir = prog_dir
 		self.tc = TildeContrib(prog_dir)
 
 	def base(self):
-		print """   Welcome to tilde.town :) this program is your gateway to town-specific
+		print """   Welcome to tilde.team :) this program is your gateway to team-specific
    commands and features. Run tilde help to see the sort of things you can do."""
 
 	def help(self,argv):
