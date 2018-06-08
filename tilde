@@ -24,7 +24,7 @@ class TildeContrib(object):
 
 class TildeLauncher:
 
-	COMMANDS = ["help","contrib","chat"]
+	COMMANDS = ["help","contrib"]
 
 	USAGE = dict(help="\n  Displays this menu",contrib=" <program>\n  Your gateway to programs made by teammates,\n  for teammates!")
 
