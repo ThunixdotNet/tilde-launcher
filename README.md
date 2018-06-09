@@ -13,9 +13,9 @@ Here are the things I have left to make before this proposal can be considered a
 
 ## Top-level commands
 
- - [X] help - complete
- - [X] contrib - complete
- - [X] chat - complete
+ - [x] help - complete
+ - [x] contrib - complete
+ - [x] chat - complete
  - [ ] mail - just need to write this one
  - [ ] submit - See Questions below
 
