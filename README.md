@@ -17,27 +17,18 @@ Here are the things I have left to make before this proposal can be considered a
  - [X] contrib - complete
  - [X] chat - complete
  - [ ] mail - just need to write this one
- - [ ] page - see Questions section below
- - [ ] poetry - just need to write this one to work with prosaic (I assume)
- - [ ] submit - probably can use the same mechanic as page (unless a volunteer admin could be tasked with this, in which case, this would submit to the volunteer portal
- - [ ] toot and tweet - just need to write these
- - [ ] wiki - not gonna lie, just going to wrap the wiki tool as it exists on this one; you want thin, you got it
+ - [ ] submit - See Questions below
 
 ## Questions
 
-### `tilde page`
-
- - How should this be accomplished?
- - Is this supposed to be only for vilmibm or for an admin in general to help?
- - If the answer to the previous question is the latter, how should this be accomplished?
-
 ### `tilde submit`
 
-Same as above.
+ - How should this be accomplished?
+ - Is this supposed to be only for ben or for an admin in general to help?
+ - If the answer to the previous question is the latter, how should this be accomplished?
 
 ## Requirements
 
 In `/tilde/special`, put:
 
- - `chat` - launches IRC (however you want to do it)
  - `list` - see list program in this directory
