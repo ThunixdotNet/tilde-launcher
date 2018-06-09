@@ -7,7 +7,7 @@ class TildeContrib(object):
 		pass
 
 	def __getattr__(self,k):
-		if k in ("list","bootstrap"):
+		if k in ("list"):
 			return object.__getattr__(self,k)
 		return lambda x: os.system("/tilde/bin/{} {}".format(k," ".join(x)))
 
@@ -19,7 +19,7 @@ class TildeContrib(object):
 			if f in c:
 				ret.append(c)
 		if inc:
-			ret.extend(["list","bootstrap"])
+			ret.extend(["list"])
 		return ret
 
 class TildeLauncher:
@@ -52,9 +52,9 @@ class TildeLauncher:
 			print "Commands:"
 			for c in self.tc.list(argv[1:]):
 				print "  tilde contrib "+c
-		elif argv[0]=="bootstrap":
-			for c in self.tc.list([],False):
-				print("alias {0}=\"tilde contrib {0}\"".format(c))
+#		elif argv[0]=="bootstrap":
+#			for c in self.tc.list([],False):
+#				print("alias {0}=\"tilde contrib {0}\"".format(c))
 		else:
 			getattr(self.tc,argv[0])(argv[1:])
 
