@@ -1,79 +1,227 @@
-#!/usr/bin/python2
-import argparse,sys,os,subprocess
+#!/bin/bash
+# ---------------------------------------------------------------------------
+# tilde - manage user-submitted scripts and apps
 
-class TildeContrib(object):
-	def __init__(self,progdir):
-		self.progdir=progdir
-		pass
+# Copyright 2018, Ben Harris <ben@tilde.team>
 
-	def __getattr__(self,k):
-		if k in ("list","bootstrap"):
-			return object.__getattr__(self,k)
-		return lambda x: os.system("/tilde/bin/{} {}".format(k," ".join(x)))
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 
-	def list(self, x, inc=True):
-		cs = filter(None,subprocess.check_output(['/tilde/special/list']).split("\n"))
-		f = " ".join(x) if len(x)>0 else ""
-		ret = []
-		for c in cs:
-			if f in c:
-				ret.append(c)
-		if inc:
-			ret.extend(["list","bootstrap"])
-		return ret
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License at <http://www.gnu.org/licenses/> for
+# more details.
 
-class TildeLauncher:
+# Usage: tilde [-h|--help]
 
-	COMMANDS = ["help","contrib"]
+# ---------------------------------------------------------------------------
 
-	USAGE = dict(help="\n  Displays this menu",contrib=" <program>\n  Your gateway to programs made by teammates,\n  for teammates!")
+PROGNAME=${0##*/}
+VERSION="0.0.1"
 
-	def __init__(self,prog_dir):
-		self.progdir = prog_dir
-		self.tc = TildeContrib(prog_dir)
 
-	def base(self):
-		print """   Welcome to tilde.team :) this program is your gateway to team-specific
-   commands and features. Run tilde help to see the sort of things you can do."""
+clean_up() { # Perform pre-exit housekeeping
+  return
+}
 
-	def help(self,argv):
-		commands_to_display = []
-		if len(argv)==0:
-			commands_to_display = self.COMMANDS
-		else:
-			commands_to_display = [i for i in argv if i in self.COMMANDS]
-		for cmd in commands_to_display:
-			print "tilde {}{}".format(cmd,self.USAGE[cmd])
 
-	def contrib(self,argv):
-		if not argv:
-			argv = ["list"] # default to listing
-		if argv[0]=="list":
-			print "Commands:"
-			for c in self.tc.list(argv[1:]):
-				print "  tilde contrib "+c
-		elif argv[0]=="bootstrap":
-			print("""
-				you might have to adjust this if you're not using bash
-				(you just need to add /tilde/bin to your PATH)
+error_exit() {
+  echo -e "${1:-"unknown Error"}" >&2
+  clean_up
+  exit 1
+}
 
-				run this:
-				echo 'export PATH=$PATH:/tilde/bin' >> ~/.bashrc
-			""")
-		else:
-			getattr(self.tc,argv[0])(argv[1:])
 
-#	def chat(self,argv):
-#		os.system("/tilde/special/chat")
+graceful_exit() {
+  clean_up
+  exit
+}
 
-if __name__=="__main__":
-	tl = TildeLauncher("/tilde/bin")
-	argv = sys.argv[1:]
-	if len(argv)==0:
-		tl.base()
-	else:
-		if not hasattr(tl,argv[0]):
-			print "   Unknown command %s!"
-			tl.help([])
 
-		getattr(tl,argv[0])(argv[1:])
+signal_exit() { # Handle trapped signals
+  case $1 in
+    INT)
+      error_exit "program interrupted by user" ;;
+    TERM)
+      echo -e "\n$PROGNAME: program terminated" >&2
+      graceful_exit ;;
+    *)
+      error_exit "$PROGNAME: terminating on unknown signal" ;;
+  esac
+}
+
+
+prompt_confirm() {
+  while true; do
+    read -r -n 1 -p "${1:-continue?} [y/n]: " REPLY
+    case $REPLY in
+      [yY]) echo ; return 0 ;;
+      [nN]) echo ; return 1 ;;
+      *) printf " \033[31m %s \n\033[0m" "invalid input"
+    esac
+  done
+}
+
+
+usage() {
+  echo -e "usage: $PROGNAME [help|list|submit|about|script_name]"
+  if [[ :$PATH: != *:"/tilde/bin":* ]] ; then
+    echo -e "\nadd /tilde/bin to your PATH to use approved scripts without this wrapper"
+    echo "if you're using bash, run the following to add it quickly"
+    echo "  echo 'export PATH=\$PATH:/tilde/bin' >> ~/.bashrc && source ~/.bashrc"
+  fi
+}
+
+
+help_message() {
+  cat <<- _EOF_
+$PROGNAME ver. $VERSION
+manage user-submitted scripts and apps
+
+$(usage)
+_EOF_
+  return
+}
+
+
+submission_checklist() {
+  cat <<- _EOF_
+requirements for submitting a user script or program:
+
+  - placed in your ~/bin
+  - executable
+  - responds to help, -h, and --help
+
+_EOF_
+}
+
+
+mail_body() {
+  cat <<- _EOF_
+Subject: tilde script submission from $USER
+From: $USER@tilde.team
+To: ben@tilde.team
+
+tilde script submission from $USER
+
+script name: $1
+
+description:
+-----------------------------------------------------------------------
+
+$2
+
+-----------------------------------------------------------------------
+you'll find the script and description in: /tilde/pending-submissions/$USER/$1
+
+run this to see the approval queue:
+sudo tilde approve
+_EOF_
+}
+
+
+# Trap signals
+trap "signal_exit TERM" TERM HUP
+trap "signal_exit INT"  INT
+
+# Check for root UID
+
+
+# Parse command-line
+case $1 in
+  -h | --help | help)
+    help_message; graceful_exit ;;
+
+  -v | --version)
+    echo $VERSION ;;
+
+  -* | --*)
+    usage
+    error_exit "Unknown option $1" ;;
+
+  list | ls)
+    echo -e "available scripts:\n"
+    for scr in /tilde/bin/*; do
+      script_name=$(basename $scr)
+      target=$(readlink -f "$scr")
+      echo "$script_name by "$(stat -c '%U' $target)
+      cat /tilde/descriptions/$script_name
+      echo ""
+    done ;;
+
+  about | apropos | description)
+    if [[ -f /tilde/descriptions/$2 ]]; then
+      cat /tilde/descriptions/$2
+    else
+      echo "$2 not found. try $PROGNAME list to see available user scripts."
+    fi
+  ;;
+
+  submit)
+    echo "hello, $USER! so it's time to submit your script?"
+    submission_checklist
+    prompt_confirm "are you ready to continue?" || graceful_exit
+    echo -n "enter the name of your script: "
+    read script_name
+
+    if [[ -x $HOME/bin/$script_name ]]; then
+      echo "cool, found your script"
+      [[ -x /tilde/pending-submissions/$USER/$script_name/$script_name ]] && error_exit "you've already submitted $script_name"
+    else
+      error_exit "$script_name not found in ~/bin"
+    fi
+
+    echo "enter a description of your script: "
+    read description
+    echo -e "\nyour script, along with your description will be sent to the admins for approval"
+    prompt_confirm "ready to submit?" || graceful_exit
+
+    # submit now
+    mkdir -p /tilde/pending-submissions/$USER/$script_name
+    ln -s $HOME/bin/$script_name /tilde/pending-submissions/$USER/$script_name/$script_name
+    echo $description > /tilde/pending-submissions/$USER/$script_name/description.txt
+    mail_body $script_name "$description" | sendmail ben
+    echo "script submitted. thanks! :)" ;;
+
+  approve)
+    if [[ $(id -u) != 0 ]]; then
+      error_exit "You must be the superuser to run this script."
+    fi
+
+    echo -e "welcome to the approval queue\n\n"
+
+    for user in /tilde/pending-submissions/*; do
+      for scr in $user/*; do
+        script_name=$(basename $scr)
+        script=$scr/$script_name
+        echo "$script_name by $user"
+        cat $scr/description.txt
+        prompt_confirm "approve?" || continue
+
+        sudo ln -s $(readlink -f $script) /tilde/bin/$script_name
+        sudo mv $scr/description.txt /tilde/descriptions/$script_name
+        sudo rm -rf $scr
+        echo "your submission of $script_name has been approved and is now available at /tilde/bin/$script_name" | sendmail $user
+      done
+    done ;;
+
+  *)
+    if [[ -x /tilde/bin/$1 ]]; then
+      prog=/tilde/bin/$1
+      shift
+      $prog "$@"
+      graceful_exit
+    else
+      [[ $1 == "" ]] || echo -e "$1 not found. try $PROGNAME list to see what's available\n"
+      help_message; graceful_exit;
+    fi ;;
+
+esac
+
+# Main logic
+
+graceful_exit
+
