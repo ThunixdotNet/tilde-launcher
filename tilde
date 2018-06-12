@@ -195,6 +195,7 @@ case $1 in
 
     for user in /tilde/pending-submissions/*; do
       for scr in $user/*; do
+        user=$(basename $user)
         script_name=$(basename $scr)
         script=$scr/$script_name
         echo "$script_name by $user"
