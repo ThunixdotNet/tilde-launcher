@@ -67,7 +67,16 @@ prompt_confirm() {
 
 
 usage() {
-  echo -e "usage: $PROGNAME [help|list|submit|about|script_name]"
+  echo -e "\nusage: $PROGNAME [help|list|submit|about|script_name]\n"
+  echo "  $PROGNAME list                 - show a list of approved userscripts"
+  echo "  $PROGNAME submit               - start the submission flow for your own script"
+  [[ $(id -u) == 0 ]] && {
+    echo "  $PROGNAME approve              - enter the approval queue"
+    echo "  $PROGNAME revoke <script_name> - send a script back to the author and remove from /tilde/bin"
+  }
+  echo "  $PROGNAME about <script_name>  - get the description for script_name"
+  echo "  $PROGNAME <script_name>        - run script_name with all remaining args are passed to the script"
+
   if [[ :$PATH: != *:"/tilde/bin":* ]] ; then
     echo -e "\nadd /tilde/bin to your PATH to use approved scripts without this wrapper"
     echo "if you're using bash, run the following to add it quickly"
@@ -79,11 +88,26 @@ usage() {
 help_message() {
   cat <<- _EOF_
 $PROGNAME ver. $VERSION
-manage user-submitted scripts and apps
-
+wrapper for user-submitted scripts
+supports user submission and admin approval
 $(usage)
 _EOF_
   return
+}
+
+
+verify_script_name() {
+  [[ $1 == "" ]] && error_exit "please start over and enter the script name"
+  [[ $(type -P "$1") ]] &&
+    [[ -x $HOME/bin/$1 ]] ||
+    error_exit "$1 already exists. rename your script and try again."
+  [[ -x /tilde/bin/$1 ]] && error_exit "$1 is already taken. rename your script and try again."
+  case $1 in
+    about|description|list|ls|submit|about|help|apropos|submit|approve)
+      error_exit "$1 is a subcommand of tilde. rename your script and try again." ;;
+    *)
+      return ;;
+  esac
 }
 
 
@@ -93,7 +117,8 @@ requirements for submitting a user script or program:
 
   - placed in your ~/bin
   - executable
-  - responds to help, -h, and --help
+  - responds to help or --help
+  - no name collisions with existing scripts or $PROGNAME subcommands
 
 _EOF_
 }
@@ -167,6 +192,8 @@ case $1 in
     echo -n "enter the name of your script: "
     read script_name
 
+    verify_script_name $script_name
+
     if [[ -x $HOME/bin/$script_name ]]; then
       echo "cool, found your script"
       [[ -x /tilde/pending-submissions/$USER/$script_name/$script_name ]] && error_exit "you've already submitted $script_name"
@@ -187,9 +214,7 @@ case $1 in
     echo "script submitted. thanks! :)" ;;
 
   approve)
-    if [[ $(id -u) != 0 ]]; then
-      error_exit "You must be the superuser to run this script."
-    fi
+    [[ $(id -u) != 0 ]] && error_exit "re-run this as sudo to access the approval queue"
 
     echo -e "welcome to the approval queue\n\n"
 
@@ -197,20 +222,39 @@ case $1 in
       for scr in $user/*; do
         user=$(basename $user)
         script_name=$(basename $scr)
+        [[ -f $scr/approved ]] && continue
         script=$scr/$script_name
         echo "$script_name by $user"
         cat $scr/description.txt
         prompt_confirm "approve?" || continue
 
         sudo ln -s $(readlink -f $script) /tilde/bin/$script_name
-        sudo mv $scr/description.txt /tilde/descriptions/$script_name
-        sudo rm -rf $scr
+        sudo cp $scr/description.txt /tilde/descriptions/$script_name
+        sudo touch $scr/approved
+        sudo chmod 664 /tilde/descriptions/*
         echo "your submission of $script_name has been approved and is now available at /tilde/bin/$script_name" | sendmail $user
       done
-    done ;;
+    done
+    echo "~~done for now~~" ;;
+
+  revoke)
+    [[ $(id -u) != 0 ]] && error_exit "re-run this as sudo to access the revoke menu"
+    [[ -f /tilde/bin/$2 ]] || error_exit "$2 isn't an approved script"
+
+    prompt_confirm "revoke $2?"
+    echo -n "please provide a reason: "
+    read reason
+
+    original_script=$(readlink -f /tilde/bin/$2)
+    author=$(stat -c '%U' $original_script)
+    sudo rm /tilde/{bin,descriptions}/$2
+    sudo rm -rf /tilde/pending-submissions/$author/$2
+
+    echo -e "your script $2 has been returned because: $reason\nfeel free to resubmit" | sendmail $author
+    echo "$2 revoked and returned to author" ;;
 
   *)
-    if [[ -x /tilde/bin/$1 ]]; then
+    if [[ -f /tilde/bin/$1 ]]; then
       prog=/tilde/bin/$1
       shift
       $prog "$@"
