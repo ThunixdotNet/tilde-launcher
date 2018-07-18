@@ -1,34 +1,19 @@
-# `tilde` - A tilde-launcher proposal in Python
+# `tilde` - user script tilde-launcher
 
-This is my proposal for the tilde town program launcher. Here are the features that make it compliant with the specs:
+```
+wrapper for user-submitted scripts
+supports user submission and admin approval
 
- - It has a help menu that, while not meeting the format of the specs, gives an example usage string and description.
- - It implements the contrib system beautifully (IMO)
+usage: tilde [help|list|submit|about|<script_name>]
 
-Here are the things I have left to make before this proposal can be considered a true answer to the specs:
+  tilde list                 - show a list of approved userscripts
+  tilde submit               - start the submission flow for your own script
+  tilde about <script_name>  - get the description for script_name
+  tilde <script_name>        - run script_name with all remaining args are passed to the script
+```
 
- - [ ] Implement submit process
- - [ ] Implement other commands shown in help example (see below)
- - [ ] Polish some rough logic
+approved scripts are placed in /tilde/bin and listed with `tilde list`
 
-## Top-level commands
+submissions use sendmail to notify an admin.
 
- - [x] help - complete
- - [x] contrib - complete
- - [x] chat - complete
- - [ ] mail - just need to write this one
- - [ ] submit - See Questions below
-
-## Questions
-
-### `tilde submit`
-
- - How should this be accomplished?
- - Is this supposed to be only for ben or for an admin in general to help?
- - If the answer to the previous question is the latter, how should this be accomplished?
-
-## Requirements
-
-In `/tilde/special`, put:
-
- - `list` - see list program in this directory
+admins can use `sudo tilde approve` and `sudo tilde revoke <script_name>`.
