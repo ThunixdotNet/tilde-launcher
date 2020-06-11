@@ -22,6 +22,19 @@
 PROGNAME=${0##*/}
 VERSION="0.0.1"
 
+# check coreutils and wrap stat for portability
+if stat -c"%U" /dev/null >/dev/null 2>/dev/null ; then
+  # GNU environment
+  stat_func () {
+    stat -f %Su "$1"
+  }
+else
+  # BSD environment
+  stat_func () {
+    stat "$1" | awk '{print $5}'
+  }
+fi
+
 
 clean_up() { # Perform pre-exit housekeeping
   return
@@ -172,7 +185,7 @@ case $1 in
     for scr in /tilde/bin/*; do
       script_name=$(basename $scr)
       target=$(readlink -f "$scr")
-      echo "$script_name by "$(stat -c '%U' $target)
+      echo "$script_name by "$(stat_func $target)
       cat /tilde/descriptions/$script_name
       echo ""
     done ;;
@@ -246,7 +259,7 @@ case $1 in
     read reason
 
     original_script=$(readlink -f /tilde/bin/$2)
-    author=$(stat -c '%U' $original_script)
+    author=$(stat_func $original_script)
     sudo rm /tilde/{bin,descriptions}/$2
     sudo rm -rf /tilde/pending-submissions/$author/$2
 
