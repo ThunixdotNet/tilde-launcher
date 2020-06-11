@@ -26,12 +26,12 @@ VERSION="0.0.1"
 if stat -c"%U" /dev/null >/dev/null 2>/dev/null ; then
   # GNU environment
   stat_func () {
-    stat -f %Su "$1"
+    stat -c '%U' "$1"
   }
 else
   # BSD environment
   stat_func () {
-    stat "$1" | awk '{print $5}'
+    stat -f %Su "$1"
   }
 fi
 
