@@ -139,11 +139,11 @@ _EOF_
 
 mail_body() {
   cat <<- _EOF_
-Subject: tilde script submission from $USER
-From: $USER@tilde.team
-To: ben@tilde.team
+Subject: tilde script submission from ${USER}
+From: ${USER}@${HOSTNAME}
+To: root@${HOSTNAME}
 
-tilde script submission from $USER
+tilde script submission from ${USER}
 
 script name: $1
 
@@ -225,7 +225,7 @@ case $1 in
     mkdir -p /tilde/pending-submissions/$USER/$script_name
     ln -s $HOME/bin/$script_name /tilde/pending-submissions/$USER/$script_name/$script_name
     echo $description > /tilde/pending-submissions/$USER/$script_name/description.txt
-    mail_body $script_name "$description" | sendmail ben
+    mail_body $script_name "$description" | sendmail root 
     echo "script submitted. thanks! :)" ;;
 
   approve)
