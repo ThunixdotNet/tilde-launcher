@@ -75,7 +75,7 @@ help_message() {
 }
 
 usage() {
-    printf "\nusage: %s [help|list|submit|about|script_name\n\n" "$PROGNAME"
+    printf "\nusage: %s [help|list|submit|about|script_name]\n\n" "$PROGNAME"
     printf "  list                 - show a list of approved userscripts\n"
     printf "  submit               - start the submission flow for your own script\n"
 
