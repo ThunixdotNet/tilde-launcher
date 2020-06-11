@@ -22,6 +22,19 @@
 PROGNAME=${0##*/}
 VERSION="0.0.1"
 
+# check coreutils and wrap stat for portability
+if stat -c"%U" /dev/null >/dev/null 2>/dev/null ; then
+  # GNU environment
+  stat_func () {
+    stat -c '%U' "$1"
+  }
+else
+  # BSD environment
+  stat_func () {
+    stat -f %Su "$1"
+  }
+fi
+
 
 clean_up() { # Perform pre-exit housekeeping
   return
@@ -126,11 +139,11 @@ _EOF_
 
 mail_body() {
   cat <<- _EOF_
-Subject: tilde script submission from $USER
-From: $USER@tilde.team
-To: ben@tilde.team
+Subject: tilde script submission from ${USER}
+From: ${USER}@${HOSTNAME}
+To: root@${HOSTNAME}
 
-tilde script submission from $USER
+tilde script submission from ${USER}
 
 script name: $1
 
@@ -170,11 +183,13 @@ case $1 in
   list | ls)
     echo -e "available scripts:\n"
     for scr in /tilde/bin/*; do
-      script_name=$(basename $scr)
-      target=$(readlink -f "$scr")
-      echo "$script_name by "$(stat -c '%U' $target)
-      cat /tilde/descriptions/$script_name
-      echo ""
+      if [ -f "$scr" ]; then
+        script_name=$(basename $scr)
+        target=$(readlink -f "$scr")
+        echo "$script_name by "$(stat_func $target)
+        cat /tilde/descriptions/$script_name
+        echo ""
+      fi
     done ;;
 
   about | apropos | description)
@@ -210,7 +225,7 @@ case $1 in
     mkdir -p /tilde/pending-submissions/$USER/$script_name
     ln -s $HOME/bin/$script_name /tilde/pending-submissions/$USER/$script_name/$script_name
     echo $description > /tilde/pending-submissions/$USER/$script_name/description.txt
-    mail_body $script_name "$description" | sendmail ben
+    mail_body $script_name "$description" | sendmail root 
     echo "script submitted. thanks! :)" ;;
 
   approve)
@@ -246,7 +261,7 @@ case $1 in
     read reason
 
     original_script=$(readlink -f /tilde/bin/$2)
-    author=$(stat -c '%U' $original_script)
+    author=$(stat_func $original_script)
     sudo rm /tilde/{bin,descriptions}/$2
     sudo rm -rf /tilde/pending-submissions/$author/$2
 
