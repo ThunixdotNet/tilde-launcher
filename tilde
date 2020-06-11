@@ -291,13 +291,15 @@ case $1 in
         ;;
 
     *)
-        if [ -x "/tilde/bin/$1" ]; then
+        if [ -z "$1" ]; then
+            help_message
+            exit
+        elif [ -x "/tilde/bin/$1" ]; then
             prog="/tilde/bin/$1"
             shift
             exec "$prog" "$@"
         else
-            [ -z "$1" ] || \
-                printf "%s not found. try %s list to see what's available\n" "$1" "$PROGNAME"
+            printf "%s not found. check %s list to see what's available\n\n" "$1" "$PROGNAME"
             help_message
             exit
         fi
