@@ -20,112 +20,103 @@
 # ---------------------------------------------------------------------------
 
 PROGNAME=${0##*/}
-VERSION="0.0.1"
+VERSION="0.1.0"
 
 # check coreutils and wrap stat for portability
 if stat -c"%U" /dev/null >/dev/null 2>/dev/null ; then
-  # GNU environment
-  stat_func () {
-    stat -c '%U' "$1"
-  }
+    # GNU environment
+    stat_func () {
+        stat -c '%U' "$1"
+    }
 else
-  # BSD environment
-  stat_func () {
-    stat -f %Su "$1"
-  }
+    # BSD environment
+    stat_func () {
+        stat -f %Su "$1"
+    }
 fi
 
 
-clean_up() { # Perform pre-exit housekeeping
-  return
-}
-
-
 error_exit() {
-  echo -e "${1:-"unknown Error"}" >&2
-  clean_up
-  exit 1
+    printf "%s\n" "${1:-"unknown Error"}" >&2
+    exit 1
 }
-
-
-graceful_exit() {
-  clean_up
-  exit
-}
-
 
 signal_exit() { # Handle trapped signals
-  case $1 in
-    INT)
-      error_exit "program interrupted by user" ;;
-    TERM)
-      echo -e "\n$PROGNAME: program terminated" >&2
-      graceful_exit ;;
-    *)
-      error_exit "$PROGNAME: terminating on unknown signal" ;;
-  esac
+    case $1 in
+        INT)
+            error_exit "program interrupted by user"
+            ;;
+        TERM)
+            printf "\n%s: program terminated" "$PROGNAME" >&2
+            exit
+            ;;
+        *)
+            error_exit "$PROGNAME: terminating on unknown signal"
+            ;;
+    esac
 }
-
 
 prompt_confirm() {
-  while true; do
-    read -r -n 1 -p "${1:-continue?} [y/n]: " REPLY
-    case $REPLY in
-      [yY]) echo ; return 0 ;;
-      [nN]) echo ; return 1 ;;
-      *) printf " \033[31m %s \n\033[0m" "invalid input"
-    esac
-  done
+    while true; do
+        read -r -n 1 -p "${1:-continue?} [y/n]: " REPLY
+        case $REPLY in
+            [yY]) printf "\n" ; return 0 ;;
+            [nN]) printf "\n" ; return 1 ;;
+            *) printf " \033[31m %s \n\033[0m" "invalid input" ;;
+        esac
+    done
 }
-
-
-usage() {
-  echo -e "\nusage: $PROGNAME [help|list|submit|about|script_name]\n"
-  echo "  $PROGNAME list                 - show a list of approved userscripts"
-  echo "  $PROGNAME submit               - start the submission flow for your own script"
-  [[ $(id -u) == 0 ]] && {
-    echo "  $PROGNAME approve              - enter the approval queue"
-    echo "  $PROGNAME revoke <script_name> - send a script back to the author and remove from /tilde/bin"
-  }
-  echo "  $PROGNAME about <script_name>  - get the description for script_name"
-  echo "  $PROGNAME <script_name>        - run script_name with all remaining args are passed to the script"
-
-  if [[ :$PATH: != *:"/tilde/bin":* ]] ; then
-    echo -e "\nadd /tilde/bin to your PATH to use approved scripts without this wrapper"
-    echo "if you're using bash, run the following to add it quickly"
-    echo "  echo 'export PATH=\$PATH:/tilde/bin' >> ~/.bashrc && source ~/.bashrc"
-  fi
-}
-
 
 help_message() {
-  cat <<- _EOF_
-$PROGNAME ver. $VERSION
-wrapper for user-submitted scripts
-supports user submission and admin approval
-$(usage)
-_EOF_
-  return
+    printf "%s version %s\n" "$PROGNAME" "$VERSION"
+    printf "wrapper for user-submitted scripts\n"
+    printf "supports submission and admin approval\n"
+    usage
 }
 
+usage() {
+    printf "\nusage: %s [help|list|submit|about|script_name\n\n" "$PROGNAME"
+    printf "  list                 - show a list of approved userscripts\n"
+    printf "  submit               - start the submission flow for your own script\n"
+
+    if [[ $(id -u) == 0 ]]; then
+        printf "  approve              - enter the approval queue\n"
+        printf "  revoke <script_name> - send a script back to the author and remove from /tilde/bin\n"
+    fi
+
+    printf "  about <script_name>  - get the description for script_name\n"
+    printf "  <script_name>        - run script_name with all remaining args are passed to the script\n"
+
+    if [[ :$PATH: != *:"/tilde/bin":* ]] ; then
+        printf "\nadd /tilde/bin to your PATH to use approved scripts without this wrapper\n"
+        printf "if you're using bash, run the following to add it quickly\n"
+        printf "  echo 'export PATH=\$PATH:/tilde/bin' >> ~/.bashrc && source ~/.bashrc\n"
+    fi
+}
 
 verify_script_name() {
-  [[ $1 == "" ]] && error_exit "please start over and enter the script name"
-  if [[ $(type "$1" > /dev/null 2>&1) ]]; then
-    error_exit "$1 already exists. rename your script and try again."
-  fi
-  [[ -x /tilde/bin/$1 ]] && error_exit "$1 is already taken. rename your script and try again."
-  case $1 in
-    about|description|list|ls|submit|about|help|apropos|submit|approve)
-      error_exit "$1 is a subcommand of tilde. rename your script and try again." ;;
-    *)
-      return ;;
-  esac
+    [[ $1 == "" ]] && \
+        error_exit "please start over and enter the script name"
+
+    [[ $(type "$1" > /dev/null 2>&1) ]] && \
+        error_exit "$1 already exists. rename your script and try again."
+
+    [[ -x /tilde/bin/$1 ]] && \
+        error_exit "$1 is already taken. rename your script and try again."
+
+    case $1 in
+        about|description|list|ls|submit|about|help|apropos|submit|approve)
+            error_exit "$1 is a subcommand of tilde. rename your script and try again."
+            ;;
+        *)
+            return
+            ;;
+    esac
 }
 
 
 submission_checklist() {
-  cat <<- _EOF_
+    cat <<- _EOF_
 requirements for submitting a user script or program:
 
   - placed in your ~/bin
@@ -138,7 +129,7 @@ _EOF_
 
 
 mail_body() {
-  cat <<- _EOF_
+    cat <<- _EOF_
 Subject: tilde script submission from ${USER}
 From: ${USER}@${HOSTNAME}
 To: root@${HOSTNAME}
@@ -165,123 +156,136 @@ _EOF_
 trap "signal_exit TERM" TERM HUP
 trap "signal_exit INT"  INT
 
-# Check for root UID
-
 
 # Parse command-line
 case $1 in
-  -h | --help | help)
-    help_message; graceful_exit ;;
+    -h | --help | help)
+        help_message; exit
+        ;;
 
-  -v | --version)
-    echo $VERSION ;;
+    -v | --version)
+        printf "%s" "$VERSION"
+        ;;
 
-  -* | --*)
-    usage
-    error_exit "Unknown option $1" ;;
+    -* | --*)
+        usage
+        error_exit "Unknown option $1"
+        ;;
 
-  list | ls)
-    echo -e "available scripts:\n"
-    for scr in /tilde/bin/*; do
-      if [ -f "$scr" ]; then
-        script_name=$(basename $scr)
-        target=$(readlink -f "$scr")
-        echo "$script_name by "$(stat_func $target)
-        cat /tilde/descriptions/$script_name
-        echo ""
-      fi
-    done ;;
+    list | ls)
+        printf "available scripts:\n\n"
+        for scr in /tilde/bin/*; do
+            if [ -f "$scr" ]; then
+                script_name=$(basename "$scr")
+                target=$(readlink -f "$scr")
+                printf "%s by %s\n" "$script_name" "$(stat_func "$target")"
+                cat "/tilde/descriptions/$script_name"
+                printf "\n"
+            fi
+        done
+        ;;
 
-  about | apropos | description)
-    if [[ -f /tilde/descriptions/$2 ]]; then
-      cat /tilde/descriptions/$2
-    else
-      echo "$2 not found. try $PROGNAME list to see available user scripts."
-    fi
-  ;;
+    about | apropos | description)
+        if [[ -f "/tilde/descriptions/$2" ]]; then
+            cat "/tilde/descriptions/$2"
+        else
+            printf "%s not found. try %s list to see available user scripts.\n" "$2" "$PROGNAME"
+        fi
+        ;;
 
-  submit)
-    echo "hello, $USER! so it's time to submit your script?"
-    submission_checklist
-    prompt_confirm "are you ready to continue?" || graceful_exit
-    echo -n "enter the name of your script: "
-    read script_name
+    submit)
+        printf "hello, %s! so it's time to submit your script?\n" "$USER"
+        submission_checklist
+        prompt_confirm "are you ready to continue?" || exit
+        printf "enter the name of your script: "
+        read -r script_name
 
-    verify_script_name $script_name
+        verify_script_name "$script_name"
 
-    if [[ -x $HOME/bin/$script_name ]]; then
-      echo "cool, found your script"
-      [[ -x /tilde/pending-submissions/$USER/$script_name/$script_name ]] && error_exit "you've already submitted $script_name"
-    else
-      error_exit "$script_name not found in ~/bin"
-    fi
+        if [[ -x "$HOME/bin/$script_name" ]]; then
+            printf "cool, found your script\n"
+            [[ -x "/tilde/pending-submissions/$USER/$script_name/$script_name" ]] && \
+                error_exit "you've already submitted $script_name"
+        else
+            error_exit "$script_name not found in ~/bin"
+        fi
 
-    echo "enter a description of your script: "
-    read description
-    echo -e "\nyour script, along with your description will be sent to the admins for approval"
-    prompt_confirm "ready to submit?" || graceful_exit
+        printf "enter a description of your script: \n"
+        read -r description
+        printf "\nyour script, along with your description will be sent to the admins for approval\n"
+        prompt_confirm "ready to submit?" || exit
 
-    # submit now
-    mkdir -p /tilde/pending-submissions/$USER/$script_name
-    ln -s $HOME/bin/$script_name /tilde/pending-submissions/$USER/$script_name/$script_name
-    echo $description > /tilde/pending-submissions/$USER/$script_name/description.txt
-    mail_body $script_name "$description" | sendmail root 
-    echo "script submitted. thanks! :)" ;;
+        # submit now
+        mkdir -p "/tilde/pending-submissions/$USER/$script_name"
+        ln -s "$HOME/bin/$script_name" "/tilde/pending-submissions/$USER/$script_name/$script_name"
+        printf "%s" "$description" > "/tilde/pending-submissions/$USER/$script_name/description.txt"
+        mail_body "$script_name" "$description" | sendmail root 
+        printf "script submitted. thanks! :)\n"
+        ;;
 
-  approve)
-    [[ $(id -u) != 0 ]] && error_exit "re-run this as sudo to access the approval queue"
+    approve)
+        [[ $(id -u) != 0 ]] && error_exit "re-run this as root to access the approval queue"
 
-    echo -e "welcome to the approval queue\n\n"
+        printf "welcome to the approval queue\n\n"
 
-    for user in /tilde/pending-submissions/*; do
-      for scr in $user/*; do
-        user=$(basename $user)
-        script_name=$(basename $scr)
-        [[ -f $scr/approved ]] && continue
-        script=$scr/$script_name
-        echo "$script_name by $user"
-        cat $scr/description.txt
-        prompt_confirm "approve?" || continue
+        for user in /tilde/pending-submissions/*; do
+            for scr in $user/*; do
+                user=$(basename "$user")
+                script_name=$(basename "$scr")
+                [[ -f "$scr/approved" ]] && continue
+                script="$scr/$script_name"
 
-        sudo ln -s $(readlink -f $script) /tilde/bin/$script_name
-        sudo cp $scr/description.txt /tilde/descriptions/$script_name
-        sudo touch $scr/approved
-        sudo chmod 664 /tilde/descriptions/*
-        echo "your submission of $script_name has been approved and is now available at /tilde/bin/$script_name" | sendmail $user
-      done
-    done
-    echo "~~done for now~~" ;;
+                if [ -f "$script" ]; then
+                    printf "%s by %s\n" "$script_name" "$user"
+                    cat "$scr/description.txt"
+                    prompt_confirm "approve?" || continue
 
-  revoke)
-    [[ $(id -u) != 0 ]] && error_exit "re-run this as sudo to access the revoke menu"
-    [[ -f /tilde/bin/$2 ]] || error_exit "$2 isn't an approved script"
+                    ln -s "$(readlink -f "$script")" "/tilde/bin/$script_name"
+                    cp "$scr/description.txt" "/tilde/descriptions/$script_name"
+                    touch "$scr/approved"
+                    chmod 664 /tilde/descriptions/*
+                    printf "your submission of %s has been approved and is now available at /tilde/bin/%s" "$script_name" "$script_name" \
+                        | sendmail "$user"
+                fi
+            done
+        done
+        printf "~~done for now~~\n"
+        ;;
 
-    prompt_confirm "revoke $2?"
-    echo -n "please provide a reason: "
-    read reason
+    revoke)
+        [[ $(id -u) != 0 ]] && \
+            error_exit "re-run this as sudo to access the revoke menu"
+        [[ -f /tilde/bin/$2 ]] || \
+            error_exit "$2 isn't an approved script"
 
-    original_script=$(readlink -f /tilde/bin/$2)
-    author=$(stat_func $original_script)
-    sudo rm /tilde/{bin,descriptions}/$2
-    sudo rm -rf /tilde/pending-submissions/$author/$2
+        prompt_confirm "revoke $2?"
+        printf "please provide a reason: "
+        read -r reason
 
-    echo -e "your script $2 has been returned because: $reason\nfeel free to resubmit" | sendmail $author
-    echo "$2 revoked and returned to author" ;;
+        original_script=$(readlink -f "/tilde/bin/$2")
+        author=$(stat_func "$original_script")
+        rm "/tilde/bin/$2"
+        rm "/tilde/descriptions/$2"
+        rm -rf "/tilde/pending-submissions/$author/$2"
 
-  *)
-    if [[ -f /tilde/bin/$1 ]]; then
-      prog=/tilde/bin/$1
-      shift
-      $prog "$@"
-      graceful_exit
-    else
-      [[ $1 == "" ]] || echo -e "$1 not found. try $PROGNAME list to see what's available\n"
-      help_message; graceful_exit;
-    fi ;;
+        printf "your script %s has been returned because: %s\nfeel free to resubmit\n" "$2" "$reason" \
+            | sendmail "$author"
 
-esac
+        printf "%s revoked and returned to author" "$2"
+        ;;
 
-# Main logic
+    *)
+        if [[ -x "/tilde/bin/$1" ]]; then
+            prog="/tilde/bin/$1"
+            shift
+            exec "$prog" "$@"
+        else
+            [[ $1 == "" ]] || \
+                printf "%s not found. try %s list to see what's available\n" "$1" "$PROGNAME"
+            help_message
+            exit
+        fi
+        ;;
 
-graceful_exit
+    esac
 
