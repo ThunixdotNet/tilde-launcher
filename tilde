@@ -183,11 +183,13 @@ case $1 in
   list | ls)
     echo -e "available scripts:\n"
     for scr in /tilde/bin/*; do
-      script_name=$(basename $scr)
-      target=$(readlink -f "$scr")
-      echo "$script_name by "$(stat_func $target)
-      cat /tilde/descriptions/$script_name
-      echo ""
+      if [ -f "$scr" ]; then
+        script_name=$(basename $scr)
+        target=$(readlink -f "$scr")
+        echo "$script_name by "$(stat_func $target)
+        cat /tilde/descriptions/$script_name
+        echo ""
+      fi
     done ;;
 
   about | apropos | description)
