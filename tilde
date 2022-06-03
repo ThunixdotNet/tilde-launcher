@@ -110,7 +110,9 @@ verify_script_name() {
     fi
 
     if command -v "$1"; then
-        error_exit "$1 already exists. rename your script and try again."
+        if [ "$(command -v "$1")" != "/home/$user/bin/$1" ]; then
+            error_exit "$1 already exists. rename your script and try again."
+        fi
     fi
 
     if [ -x "/tilde/bin/$1" ]; then
