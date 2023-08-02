@@ -93,17 +93,6 @@ Please add /tilde/bin to your PATH to use approved scripts without this wrapper.
 EOF
 }
 
-usage() {
-    printf "\nusage: %s [help|list|submit|about|approve|revoke|run|script_name]\n\n" "$PROGNAME"
-    printf "  help                - Show usage information\n"
-    printf "  list                - Show a list of approved user scripts\n"
-    printf "  submit              - Start the submission flow for your own script\n"
-    printf "  about <script>      - Show description and details of a specific script\n"
-    printf "  approve             - Enter the approval queue for pending scripts (requires root)\n"
-    printf "  revoke <script>     - Revoke a previously approved script (requires root)\n"
-    printf "  run <script>        - Run an approved script\n"
-}
-
 verify_script_name() {
     if [ -z "$1" ]; then
         error_exit "please enter a script name"
@@ -198,7 +187,6 @@ case $1 in
         # Show details about a specific script
         if [ -z "$2" ]; then
             printf "Please provide a script name.\n"
-            usage
             exit 1
         fi
 
@@ -291,7 +279,7 @@ case $1 in
         # Run an approved script
         if [ -z "$2" ]; then
             printf "Please provide a script name.\n"
-            usage
+            help_message
             exit 1
         fi
 
@@ -306,13 +294,13 @@ case $1 in
         ;;
 
     "")
-        usage
+        help_message
         exit 0
         ;;
 
     *)
         printf "Invalid command: %s\n" "$1"
-        usage
+        help_message
         exit 1
         ;;
 esac
